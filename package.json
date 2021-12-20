@@ -1,19 +1,22 @@
 {
-  "name": "starter--near-sdk-as",
-  "version": "0.0.1",
-  "description": "Start with a basic project",
+  "name": "tas-kagit-makas",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
   "scripts": {
-    "dev": "watch -d -n 1 'clear && yarn test'",
-    "test": "yarn asp -f unit.spec",
-    "clean": "rm -rf ./build && rm -rf ./neardev",
-    "build": "asb --target debug",
-    "build:release": "asb",
-    "asp": "asp --verbose --nologo"
+    "test": "yarn build && asp",
+    "build": "npx asb",
+    "jest": "yarn build && jest test"
   },
   "keywords": [],
-  "author": "hello@near.org",
+  "author": "",
   "license": "ISC",
-  "devDependencies": {
+  "dependencies": {
+    "dotenv": "^8.2.0",
+    "jest": "^26.6.3",
+    "jest-environment-node": "^26.6.2",
+    "js-sha256": "^0.9.0",
+    "near-api-js": "^0.36.0",
     "near-sdk-as": "^3.1.0"
   }
 }
