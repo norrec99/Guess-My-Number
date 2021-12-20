@@ -11,7 +11,6 @@ yarn
 ```
 yarn build
 near dev-deploy ./out/main.wasm
-# save the contract id in your clipboard and send it to player 2
 ```
 
 ## How to Play
