@@ -1,7 +1,9 @@
-import { context, PersistentVector, ContractPromiseBatch, u128 } from 'near-sdk-as';
+import { context, u128 } from 'near-sdk-as';
 import { GuessMyNumber, games, GameState } from './model';
 
 export function createGame(): u32 {
+  // attach at least 1 NEAR to create a game
+  assert(context.attachedDeposit >= u128.One, 'Please deposit 1 NEAR to create a game');
   const game = new GuessMyNumber();
   games.set(game.gameId, game);
   return game.gameId;

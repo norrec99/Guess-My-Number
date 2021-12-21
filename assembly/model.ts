@@ -1,4 +1,4 @@
-import { RNG, context, PersistentMap, logging } from 'near-sdk-as';
+import { RNG, context, PersistentMap, logging, u128 } from 'near-sdk-as';
 
 export enum GameState {
   Created,
@@ -13,6 +13,7 @@ export class GuessMyNumber {
   player: string;
   roundsPlayed: u8;
   choosedNumber: u8;
+  amount: u128 = u128.One;
 
   constructor() {
     let rng = new RNG<u32>(1, u32.MAX_VALUE);
