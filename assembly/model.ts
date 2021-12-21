@@ -10,7 +10,9 @@ export enum GameState {
 export class GuessMyNumber {
   gameId: u32;
   gameState: GameState;
-  player: string;
+  player1: string;
+  player2: string;
+  nextPlayer: string;
   roundsPlayed: u8;
   choosedNumber: u8;
   amount: u128 = u128.One;
@@ -27,7 +29,9 @@ export class GuessMyNumber {
     logging.log(this.choosedNumber);
 
     this.gameState = GameState.Created;
-    this.player = context.sender;
+    this.player1 = context.sender;
+    this.nextPlayer = this.player1;
+    this.player2 = '';
     this.roundsPlayed = 0;
   }
 }

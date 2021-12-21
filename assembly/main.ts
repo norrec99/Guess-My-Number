@@ -13,19 +13,35 @@ export function play(gameId: u32, selectedNumber: u8): string {
   assert(games.contains(gameId), 'GameId not found');
 
   let game = games.getSome(gameId);
+  let currentPlayer = context.sender;
   assert(selectedNumber <= 10 || selectedNumber >= 1, 'Your number should be in the range of 1 - 10');
-  game.gameState = GameState.InProgress;
   let message = '';
 
-  if (game.choosedNumber == selectedNumber) {
-    message = finishGame(game);
+  if (game.choosedNumber < selectedNumber && currentPlayer == game.player1) {
+    assert(game.player2 != context.sender, 'Same Player. It is not your turn');
+    message = 'Go lower!';
+    currentPlayer = game.player2;
+  } else if (game.choosedNumber > selectedNumber && currentPlayer == game.player1) {
+    assert(game.player2 != context.sender, 'Same Player. It is not your turn');
+    message = 'Go higher!';
+    currentPlayer = game.player2;
+  } else if (game.choosedNumber == selectedNumber && currentPlayer == game.player1) {
+    message = finishGame(game, game.player1);
   } else {
+    game.player2 = context.sender;
     assert(game.gameState == GameState.InProgress, 'Game is not in progress');
+    assert(game.player1 != context.sender, 'Same Player. It is not your turn');
 
-    if (game.choosedNumber < selectedNumber) {
+    if (game.choosedNumber < selectedNumber && currentPlayer == game.player2) {
       message = 'Go lower!';
-    } else if (game.choosedNumber > selectedNumber) {
+      currentPlayer = game.player1;
+    } else if (game.choosedNumber > selectedNumber && currentPlayer == game.player2) {
       message = 'Go higher!';
+      currentPlayer = game.player1;
+    } else if (game.choosedNumber == selectedNumber && currentPlayer == game.player2) {
+      message = finishGame(game, game.player2);
+    } else if (game.choosedNumber == selectedNumber && currentPlayer == game.player1) {
+      message = finishGame(game, game.player1);
     }
   }
 
@@ -40,8 +56,22 @@ export function play(gameId: u32, selectedNumber: u8): string {
   return message;
 }
 
-export function finishGame(game: GuessMyNumber): string {
+export function joinGame(gameId: u32): string {
+  assert(games.contains(gameId), 'Game does not exist');
+  let game = games.getSome(gameId);
+  assert(game.player2 == '', 'This game already has two players');
+  assert(game.player1 != context.sender, 'You can not play with yourself :(');
+
+  game.player2 = context.sender;
+  game.gameState = GameState.InProgress;
+
+  games.set(gameId, game);
+
+  return 'Joined the game, lets play!';
+}
+
+export function finishGame(game: GuessMyNumber, player: string): string {
   game.gameState = GameState.Completed;
   games.set(game.gameId, game);
-  return `Congratulations: Player guessed the number which is ${game.choosedNumber}`;
+  return `Congratulations: ${player} guessed the number which is ${game.choosedNumber}`;
 }
