@@ -10,10 +10,13 @@ export enum GameState {
 export class GuessMyNumber {
   gameId: u32;
   gameState: GameState;
-  player: string;
+  player1: string;
+  player2: string;
+  nextPlayer: string;
   roundsPlayed: u8;
   choosedNumber: u8;
   amount: u128 = u128.One;
+  totalAmount: u128;
 
   constructor() {
     let rng = new RNG<u32>(1, u32.MAX_VALUE);
@@ -21,14 +24,17 @@ export class GuessMyNumber {
     this.gameId = roll;
     logging.log(this.gameId);
 
-    let rng1 = new RNG<u8>(1, 11);
+    let rng1 = new RNG<u8>(1, 10);
     let roll1 = rng1.next();
-    this.choosedNumber = roll1;
+    this.choosedNumber = roll1 + 1;
     logging.log(this.choosedNumber);
 
     this.gameState = GameState.Created;
-    this.player = context.sender;
+    this.player1 = context.sender;
+    this.nextPlayer = this.player1;
+    this.player2 = '';
     this.roundsPlayed = 0;
+    this.totalAmount = context.attachedDeposit;
   }
 }
 
