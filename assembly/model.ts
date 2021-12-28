@@ -15,8 +15,8 @@ export class GuessMyNumber {
   nextPlayer: string;
   roundsPlayed: u8;
   choosedNumber: u8;
-  amount: u128 = u128.One;
   totalAmount: u128;
+  bet: u128 = u128.Zero;
 
   constructor() {
     let rng = new RNG<u32>(1, u32.MAX_VALUE);
