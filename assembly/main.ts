@@ -1,13 +1,18 @@
 import { context, ContractPromiseBatch, logging, u128 } from 'near-sdk-as';
-import { GuessMyNumber, games, GameState } from './model';
+import { GuessMyNumber, games, gameIds, GameState } from './model';
 
 export function createGame(): u32 {
-  // attach at least 1 NEAR to create a game
+  // attach exactly 1 NEAR to create a game
   assert(context.attachedDeposit == u128.fromString('1000000000000000000000000'), 'Please deposit exactly 1 NEAR to create a game');
   const game = new GuessMyNumber();
   games.set(game.gameId, game);
+  gameIds.push(game);
 
   return game.gameId;
+}
+
+export function get_gameIds(): GuessMyNumber[] {
+  return GuessMyNumber.all();
 }
 
 /** If you want to increase the bet use this function instead of above
@@ -63,10 +68,11 @@ export function play(gameId: u32, selectedNumber: u8): string {
   }
 
   game.roundsPlayed++;
-  if (game.roundsPlayed == 5) {
+  if (game.roundsPlayed > 4) {
     game.gameState = GameState.Completed;
-    games.set(game.gameId, game);
-    return `Sorry!, You couldn't guessed the number!`;
+
+    returnMoney(game, game.player1, game.player2);
+    return `Sorry!, Nobody guessed the number!`;
   }
 
   games.set(game.gameId, game);
@@ -112,7 +118,7 @@ export function joinGame(gameId: u32): string {
 //   assert(game.player2 == '', 'This game already has two players');
 //   assert(game.player1 != context.sender, 'You can not play with yourself :(');
 
-//   // Player2 deposits 1 NEAR to join the game
+//   // Player2 deposits bet amount of NEAR to join the game
 //   game.totalAmount = u128.add(game.totalAmount, bet);
 //   // logging.log(game.totalAmount);
 
@@ -154,4 +160,25 @@ export function finishGame(game: GuessMyNumber, player: string): string {
 
   games.set(game.gameId, game);
   return `Congratulations: ${player} guessed the number which is ${game.choosedNumber} and received ${amount_to_receive} Ⓝ`;
+}
+
+/**
+ * returns money back to players
+ * @param game
+ * @param player1
+ * @param player2
+ */
+export function returnMoney(game: GuessMyNumber, player1: string, player2: string): void {
+  // transfer NEAR back to players
+  const to_player1 = ContractPromiseBatch.create(player1);
+  const to_player2 = ContractPromiseBatch.create(player2);
+
+  // amount of NEAR each player deposited
+  const amount_to_receive = u128.sub(game.totalAmount, game.creationAmount);
+  // logging.log(amount_to_receive);
+
+  to_player1.transfer(amount_to_receive);
+  to_player2.transfer(amount_to_receive);
+
+  games.set(game.gameId, game);
 }
