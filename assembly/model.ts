@@ -42,15 +42,15 @@ export class GuessMyNumber {
   }
 
   static all(): GuessMyNumber[] {
-    const numGameIds = min(MAX_GAMEIDS, gameIds.length);
-    const startIndex = gameIds.length - numGameIds;
+    const numGameIds = min(MAX_GAMEIDS, lastGames.length);
+    const startIndex = lastGames.length - numGameIds;
     const result = new Array<GuessMyNumber>(numGameIds);
     for (let i = 0; i < numGameIds; i++) {
-      result[i] = gameIds[i + startIndex];
+      result[i] = lastGames[i + startIndex];
     }
     return result;
   }
 }
 
 export const games = new PersistentMap<u32, GuessMyNumber>('g');
-export const gameIds = new PersistentVector<GuessMyNumber>('i');
+export const lastGames = new PersistentVector<GuessMyNumber>('l');

@@ -1,17 +1,17 @@
 import { context, ContractPromiseBatch, logging, u128 } from 'near-sdk-as';
-import { GuessMyNumber, games, gameIds, GameState } from './model';
+import { GuessMyNumber, games, lastGames, GameState } from './model';
 
 export function createGame(): u32 {
   // attach exactly 1 NEAR to create a game
   assert(context.attachedDeposit == u128.fromString('1000000000000000000000000'), 'Please deposit exactly 1 NEAR to create a game');
   const game = new GuessMyNumber();
   games.set(game.gameId, game);
-  gameIds.push(game);
+  lastGames.push(game);
 
   return game.gameId;
 }
 
-export function get_gameIds(): GuessMyNumber[] {
+export function get_lastGames(): GuessMyNumber[] {
   return GuessMyNumber.all();
 }
 
