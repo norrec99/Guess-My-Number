@@ -1,55 +1,63 @@
 import { context, ContractPromiseBatch, logging, u128 } from 'near-sdk-as';
-import { GuessMyNumber, games, lastGames, GameState } from './model';
+import { Game, games, lastGames, State } from './model';
 
-export function createGame(): u32 {
+// --------------------------------------------------------------------------
+// Public VIEW methods
+// --------------------------------------------------------------------------
+
+export function get_lastGames(): Game[] {
+  return Game.all();
+}
+
+// --------------------------------------------------------------------------
+// Public CHANGE methods
+// --------------------------------------------------------------------------
+
+export function createGame(): string {
   // attach exactly 1 NEAR to create a game
   assert(context.attachedDeposit == u128.fromString('1000000000000000000000000'), 'Please deposit exactly 1 NEAR to create a game');
-  const game = new GuessMyNumber();
-  games.set(game.gameId, game);
+  const game = new Game();
+  games.set(game.id, game);
   lastGames.push(game);
 
-  return game.gameId;
+  return game.id;
 }
 
-export function get_lastGames(): GuessMyNumber[] {
-  return GuessMyNumber.all();
-}
-
-/** If you want to increase the bet use this function instead of above
- *
+/**
+ * If you want to increase the bet use this function instead of above
  * @param bet
  * @returns
  */
 // export function createGame(bet: u128): u32 {
 //   // attach at least 1 NEAR to create a game
 //   assert(context.attachedDeposit == bet, 'Please deposit exactly the amount of bet to create a game');
-//   const game = new GuessMyNumber();
+//   const game = new Game();
 //   game.bet = bet;
 //   logging.log(game.bet);
-//   games.set(game.gameId, game);
+//   games.set(game.id, game);
 
-//   return game.gameId;
+//   return game.id;
 // }
 
 /**
  *
- * @param gameId
+ * @param id
  * @param selectedNumber
  * @returns
  */
-export function play(gameId: u32, selectedNumber: u8): string {
+export function play(id: string, selectedNumber: u8): string {
   // check wheter game is initialized
-  assert(games.contains(gameId), 'GameId not found');
+  assert(games.contains(id), 'Game id not found');
 
   // find the game
-  let game = games.getSome(gameId);
+  let game = games.getSome(id);
 
   // set currentPlayer as sender
   let currentPlayer = context.sender;
 
   // assert turns and game progress
   assert(game.nextPlayer == currentPlayer, 'Its not your turn');
-  assert(game.gameState == GameState.InProgress, 'Game is not in progress');
+  assert(game.state == State.InProgress, 'Game is not in progress');
 
   // selectedNumber must be between 1-10
   assert(selectedNumber <= 10, 'Your number must be in the range of 1 - 10');
@@ -69,26 +77,26 @@ export function play(gameId: u32, selectedNumber: u8): string {
 
   game.roundsPlayed++;
   if (game.roundsPlayed > 4) {
-    game.gameState = GameState.Completed;
+    game.state = State.Completed;
 
     returnMoney(game, game.player1, game.player2);
     return `Sorry!, Nobody guessed the number!`;
   }
 
-  games.set(game.gameId, game);
+  games.set(game.id, game);
   return message;
 }
 
 /**
  *
- * @param gameId
+ * @param id
  * @returns
  */
-export function joinGame(gameId: u32): string {
-  assert(games.contains(gameId), 'Game does not exist');
+export function joinGame(id: string): string {
+  assert(games.contains(id), 'Game does not exist');
   assert(context.attachedDeposit == u128.fromString('1000000000000000000000000'), 'Please deposit exactly 1 NEAR to join a game');
 
-  let game = games.getSome(gameId);
+  let game = games.getSome(id);
   assert(game.player2 == '', 'This game already has two players');
   assert(game.player1 != context.sender, 'You can not play with yourself :(');
 
@@ -97,22 +105,22 @@ export function joinGame(gameId: u32): string {
   // logging.log(game.totalAmount);
 
   game.player2 = context.sender;
-  game.gameState = GameState.InProgress;
+  game.state = State.InProgress;
 
-  games.set(gameId, game);
+  games.set(id, game);
 
   return `Joined the game ${game.player2}, waiting for your opponent to make the first move`;
 }
 
-/** If you want to increase the bet use this function instead of above
- *
- * @param gameId
+/**
+ * If you want to increase the bet use this function instead of above
+ * @param id
  * @param bet
  * @returns
  */
-// export function joinGame(gameId: u32, bet: u128): string {
-//   assert(games.contains(gameId), 'Game does not exist');
-//   let game = games.getSome(gameId);
+// export function joinGame(id: u32, bet: u128): string {
+//   assert(games.contains(id), 'Game does not exist');
+//   let game = games.getSome(id);
 //   assert(context.attachedDeposit == bet, `Please deposit exactly ${game.bet} to join a game`);
 //   assert(bet == game.bet, `Please deposit exactly ${game.bet} to join a game`);
 //   assert(game.player2 == '', 'This game already has two players');
@@ -123,9 +131,9 @@ export function joinGame(gameId: u32): string {
 //   // logging.log(game.totalAmount);
 
 //   game.player2 = context.sender;
-//   game.gameState = GameState.InProgress;
+//   game.state = State.InProgress;
 
-//   games.set(gameId, game);
+//   games.set(id, game);
 
 //   return `Joined the game ${game.player2}, waiting for your opponent to make the first move`;
 // }
@@ -135,7 +143,7 @@ export function joinGame(gameId: u32): string {
  * @param player
  * @param game
  */
-function setNextPlayer(player: string, game: GuessMyNumber): void {
+function setNextPlayer(player: string, game: Game): void {
   if (player == game.player1) {
     game.nextPlayer = game.player2;
   } else if (player == game.player2) {
@@ -149,8 +157,8 @@ function setNextPlayer(player: string, game: GuessMyNumber): void {
  * @param player
  * @returns
  */
-export function finishGame(game: GuessMyNumber, player: string): string {
-  game.gameState = GameState.Completed;
+export function finishGame(game: Game, player: string): string {
+  game.state = State.Completed;
 
   // transfer NEAR to the winner
   const to_winner = ContractPromiseBatch.create(player);
@@ -158,7 +166,7 @@ export function finishGame(game: GuessMyNumber, player: string): string {
   // logging.log(amount_to_receive);
   to_winner.transfer(amount_to_receive);
 
-  games.set(game.gameId, game);
+  games.set(game.id, game);
   return `Congratulations: ${player} guessed the number which is ${game.choosedNumber} and received ${amount_to_receive} Ⓝ`;
 }
 
@@ -168,7 +176,7 @@ export function finishGame(game: GuessMyNumber, player: string): string {
  * @param player1
  * @param player2
  */
-export function returnMoney(game: GuessMyNumber, player1: string, player2: string): void {
+export function returnMoney(game: Game, player1: string, player2: string): void {
   // transfer NEAR back to players
   const to_player1 = ContractPromiseBatch.create(player1);
   const to_player2 = ContractPromiseBatch.create(player2);
@@ -180,5 +188,5 @@ export function returnMoney(game: GuessMyNumber, player1: string, player2: strin
   to_player1.transfer(amount_to_receive);
   to_player2.transfer(amount_to_receive);
 
-  games.set(game.gameId, game);
+  games.set(game.id, game);
 }

@@ -1,17 +1,17 @@
 import { RNG, context, PersistentMap, logging, u128, PersistentVector } from 'near-sdk-as';
 
-export enum GameState {
+export enum State {
   Created,
   InProgress,
   Completed
 }
 
-const MAX_GAMEIDS = 12;
+const MAX_IDS = 12;
 
 @nearBindgen
-export class GuessMyNumber {
-  gameId: u32;
-  gameState: GameState;
+export class Game {
+  id: string;
+  state: State;
   player1: string;
   player2: string;
   nextPlayer: string;
@@ -22,17 +22,15 @@ export class GuessMyNumber {
   bet: u128 = u128.Zero;
 
   constructor() {
-    let rng = new RNG<u32>(1, u32.MAX_VALUE);
-    let roll = rng.next();
-    this.gameId = roll;
-    logging.log(this.gameId);
+    this.id = context.blockIndex.toString().slice(2, 8);
+    logging.log(this.id);
 
-    let rng1 = new RNG<u8>(1, 10);
-    let roll1 = rng1.next();
-    this.choosedNumber = roll1 + 1;
+    let rng = new RNG<u8>(1, 10);
+    let roll = rng.next();
+    this.choosedNumber = roll + 1;
     logging.log(this.choosedNumber);
 
-    this.gameState = GameState.Created;
+    this.state = State.Created;
     this.player1 = context.sender;
     this.nextPlayer = this.player1;
     this.player2 = '';
@@ -41,16 +39,16 @@ export class GuessMyNumber {
     this.creationAmount = context.attachedDeposit;
   }
 
-  static all(): GuessMyNumber[] {
-    const numGameIds = min(MAX_GAMEIDS, lastGames.length);
-    const startIndex = lastGames.length - numGameIds;
-    const result = new Array<GuessMyNumber>(numGameIds);
-    for (let i = 0; i < numGameIds; i++) {
+  static all(): Game[] {
+    const numIDs = min(MAX_IDS, lastGames.length);
+    const startIndex = lastGames.length - numIDs;
+    const result = new Array<Game>(numIDs);
+    for (let i = 0; i < numIDs; i++) {
       result[i] = lastGames[i + startIndex];
     }
     return result;
   }
 }
 
-export const games = new PersistentMap<u32, GuessMyNumber>('g');
-export const lastGames = new PersistentVector<GuessMyNumber>('l');
+export const games = new PersistentMap<string, Game>('g');
+export const lastGames = new PersistentVector<Game>('l');
