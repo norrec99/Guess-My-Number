@@ -1,4 +1,4 @@
-import { RNG, context, PersistentMap, logging, u128, PersistentVector } from 'near-sdk-as';
+import { RNG, context, logging, u128, PersistentUnorderedMap } from 'near-sdk-as';
 
 export enum State {
   Created,
@@ -28,7 +28,7 @@ export class Game {
     let rng = new RNG<u8>(1, 10);
     let roll = rng.next();
     this.choosedNumber = roll + 1;
-    logging.log(this.choosedNumber);
+    // logging.log(this.choosedNumber);
 
     this.state = State.Created;
     this.player1 = context.sender;
@@ -38,17 +38,6 @@ export class Game {
     this.totalAmount = context.attachedDeposit;
     this.creationAmount = context.attachedDeposit;
   }
-
-  static all(): Game[] {
-    const numIDs = min(MAX_IDS, lastGames.length);
-    const startIndex = lastGames.length - numIDs;
-    const result = new Array<Game>(numIDs);
-    for (let i = 0; i < numIDs; i++) {
-      result[i] = lastGames[i + startIndex];
-    }
-    return result;
-  }
 }
 
-export const games = new PersistentMap<string, Game>('g');
-export const lastGames = new PersistentVector<Game>('l');
+export const games = new PersistentUnorderedMap<string, Game>('g');
