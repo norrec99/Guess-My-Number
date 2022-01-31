@@ -1,12 +1,21 @@
 import { context, ContractPromiseBatch, logging, u128 } from 'near-sdk-as';
-import { Game, games, lastGames, State } from './model';
+import { Game, games, State } from './model';
 
 // --------------------------------------------------------------------------
 // Public VIEW methods
 // --------------------------------------------------------------------------
 
-export function get_lastGames(): Game[] {
-  return Game.all();
+/**
+ *
+ * @param id
+ * @returns
+ */
+export function viewGame(id: string): Game {
+  return games.getSome(id);
+}
+
+export function viewAllGames(): Array<Game> {
+  return games.values();
 }
 
 // --------------------------------------------------------------------------
@@ -18,7 +27,6 @@ export function createGame(): string {
   assert(context.attachedDeposit == u128.fromString('1000000000000000000000000'), 'Please deposit exactly 1 NEAR to create a game');
   const game = new Game();
   games.set(game.id, game);
-  lastGames.push(game);
 
   return game.id;
 }
