@@ -1,4 +1,4 @@
-import { context, ContractPromiseBatch, logging, u128 } from 'near-sdk-as';
+import { context, ContractPromiseBatch, logging, math, u128 } from 'near-sdk-as';
 import { Game, games, State } from './model';
 
 // --------------------------------------------------------------------------
@@ -53,9 +53,12 @@ export function createGame(): string {
  * @param selectedNumber
  * @returns
  */
-export function play(id: string, selectedNumber: u8): string {
+export function play(id: string, selectedNumber: i32): string {
   // check wheter game is initialized
   assert(games.contains(id), 'Game id not found');
+
+  let hashedSelectedNumber = math.hash(selectedNumber);
+  logging.log(hashedSelectedNumber);
 
   // find the game
   let game = games.getSome(id);
@@ -73,18 +76,15 @@ export function play(id: string, selectedNumber: u8): string {
   let message = '';
 
   // show message and set next player
-  if (game.choosedNumber < selectedNumber) {
-    message = 'Go lower!';
+  if (hashedSelectedNumber.toString() == game.hashedNumber.toString()) {
+    message = finishGame(game, currentPlayer, selectedNumber);
+  } else {
+    message = 'Wrong number!!';
     setNextPlayer(currentPlayer, game);
-  } else if (game.choosedNumber > selectedNumber) {
-    message = 'Go higher!';
-    setNextPlayer(currentPlayer, game);
-  } else if (game.choosedNumber == selectedNumber) {
-    message = finishGame(game, currentPlayer);
   }
 
   game.roundsPlayed++;
-  if (game.roundsPlayed > 4) {
+  if (game.roundsPlayed > 6) {
     game.state = State.Completed;
 
     returnMoney(game, game.player1, game.player2);
@@ -165,7 +165,7 @@ function setNextPlayer(player: string, game: Game): void {
  * @param player
  * @returns
  */
-export function finishGame(game: Game, player: string): string {
+function finishGame(game: Game, player: string, number: i32): string {
   game.state = State.Completed;
 
   // transfer NEAR to the winner
@@ -175,7 +175,7 @@ export function finishGame(game: Game, player: string): string {
   to_winner.transfer(amount_to_receive);
 
   games.set(game.id, game);
-  return `Congratulations: ${player} guessed the number which is ${game.choosedNumber} and received ${amount_to_receive} Ⓝ`;
+  return `Congratulations: ${player} guessed the number which is ${number} and received ${amount_to_receive} Ⓝ`;
 }
 
 /**
@@ -184,7 +184,7 @@ export function finishGame(game: Game, player: string): string {
  * @param player1
  * @param player2
  */
-export function returnMoney(game: Game, player1: string, player2: string): void {
+function returnMoney(game: Game, player1: string, player2: string): void {
   // transfer NEAR back to players
   const to_player1 = ContractPromiseBatch.create(player1);
   const to_player2 = ContractPromiseBatch.create(player2);
@@ -198,3 +198,8 @@ export function returnMoney(game: Game, player1: string, player2: string): void 
 
   games.set(game.id, game);
 }
+
+// this is not working
+// function areEqual(first: Uint8Array, second: Uint8Array): bool {
+//   return first.length === second.length && first.every((value, index) => value === second[index]);
+// }
