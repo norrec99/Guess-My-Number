@@ -1,4 +1,4 @@
-import { RNG, context, logging, u128, PersistentUnorderedMap, math } from 'near-sdk-as';
+import { RNG, context, u128, PersistentUnorderedMap, math, logging } from 'near-sdk-as';
 
 export enum State {
   Created,
@@ -27,6 +27,7 @@ export class Game {
 
     let choosedNumber = new Uint8Array(roll + 1).byteLength;
     this.hashedNumber = math.hash(choosedNumber);
+    logging.log(roll + 1);
 
     this.state = State.Created;
     this.player1 = context.sender;
